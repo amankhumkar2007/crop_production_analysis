@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crop Production Analysis</title>
+<style>
+:root{--bg:#faf7f0;--card:#fff;--tx:#2b2b2b;--mu:#6b6b5e;--g1:#1f4d2e;--g2:#3e8e41;--g3:#e6f1e1;--bd:#dce6d6;--gd:#d9a441;--br:#8b6b43;--hd:#1f4d2e;--hdt:#fff;--kt:#fff}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a14;--card:#1b261e;--tx:#e8efe6;--mu:#a2b0a0;--g1:#8fd19a;--g2:#5fb86a;--g3:#223427;--bd:#2d3d31;--hd:#0e2417;--hdt:#e8efe6;--kt:#10200f}}
+:root[data-theme="dark"]{--bg:#121a14;--card:#1b261e;--tx:#e8efe6;--mu:#a2b0a0;--g1:#8fd19a;--g2:#5fb86a;--g3:#223427;--bd:#2d3d31;--hd:#0e2417;--hdt:#e8efe6;--kt:#10200f}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.45}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;margin:0}
+header{background:var(--hd);color:var(--hdt);padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header h1{font-size:20px}header small{opacity:.8;display:block;font-size:12px}
+.up{background:var(--gd);color:#2b2b2b;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer}
+.up input{display:none}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px 20px;background:var(--card);border-bottom:1px solid var(--bd);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+nav button{white-space:nowrap;border:1px solid var(--bd);background:var(--bg);color:var(--tx);padding:7px 12px;border-radius:999px;font-size:13px;cursor:pointer}
+nav button.on{background:var(--g2);color:#fff;border-color:var(--g2)}
+main{max-width:1100px;margin:0 auto;padding:18px 20px 40px}
+.note{background:var(--g3);color:var(--g1);border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:14px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.filters label{font-size:12px;color:var(--mu);display:flex;flex-direction:column;gap:3px}
+select{padding:7px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);min-width:140px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--g1);color:#fff;border-radius:12px;padding:14px 16px;color:var(--kt)}
+.kpi:nth-child(even){background:var(--g2)}
+.kpi b{display:block;font-size:26px;font-family:Georgia,serif}.kpi span{font-size:13px;opacity:.9}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.card h3{font-size:15px;color:var(--g1);margin-bottom:8px}
+.box{position:relative;height:260px}
+.hero{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:24px;margin-bottom:16px}
+.hero h2{font-size:28px;color:var(--g1);margin-bottom:8px}.hero p{color:var(--mu);margin:6px 0}
+.pages{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.pages button{text-align:left;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;cursor:pointer;color:var(--tx)}
+.pages button b{display:block;color:var(--g1);font-family:Georgia,serif}.pages button span{font-size:12px;color:var(--mu)}
+footer{text-align:center;color:var(--mu);font-size:12px;padding:10px 20px 24px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>🌾 Crop Production Analysis</h1><small>Agriculture &amp; Crop Production Dashboard · Aman Vilas Kumkar · TechnoHacks Solutions Pvt. Ltd.</small></div>
+  <label class="up">⬆ Upload your data (.xlsx / .csv)<input type="file" id="file" accept=".xlsx,.xls,.csv"></label>
+</header>
+<nav id="nav"></nav>
+<main>
+  <div class="note" id="note"></div>
+  <div id="filters" class="filters"></div>
+  <div id="view"></div>
+</main>
+<footer>Internship Supervisor: Mr. Sandip Gavit · College ITR Mentor: Mr. V.D. Kale</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const F={prod:'Production (Tonnes)',area:'Area Cultivated (Hectare)',yld:'Yield (Tonnes/Hectare)',profit:'Profit (₹)',rev:'Total Revenue (₹)',cost:'Total Cost (₹)',rain:'Rainfall (mm)',temp:'Temperature (°C)',farm:'Number of Farmers',irr:'Irrigated Area (Hectare)',fert:'Fertilizer Usage (Kg/Hectare)',dem:'Market Demand (Tonnes)',price:'Market Price (₹/Ton)',exp:'Export Quantity (Tonnes)',pcost:'Production Cost (₹/Hectare)'};
+const P=(id,name,desc,kpis,charts)=>({id,name,desc,kpis,charts});
+const PAGES=[
+P('ov','Agriculture Overview','Production, area and profit at a glance',[['Total Production','prod','sum','t'],['Area Cultivated','area','sum','ha'],['Total Profit','profit','sum','₹']],[['Production by Year','line','Year','prod','sum'],['Production by Crop','bar','Crop','prod','sum']]),
+P('st','State Analysis','Compare states on output and profit',[['Total Production','prod','sum','t'],['Total Profit','profit','sum','₹']],[['Production by State','bar','State','prod','sum'],['Profit by State','bar','State','profit','sum'],['Avg Yield by State','bar','State','yld','avg']]),
+P('di','District Analysis','District-level production and yield',[['Total Production','prod','sum','t'],['Total Profit','profit','sum','₹']],[['Production by District','bar','District','prod','sum'],['Profit by District','bar','District','profit','sum'],['Avg Yield by District','bar','District','yld','avg']]),
+P('cs','Crop & Season Analysis','Yield by crop, category and season',[['Average Yield','yld','avg','t/ha'],['Total Production','prod','sum','t']],[['Avg Yield by Crop','bar','Crop','yld','avg'],['Production by Crop Category','doughnut','Crop Category','prod','sum'],['Production by Season','bar','Crop Season','prod','sum']]),
+P('ci','Climate & Irrigation Analysis','Rainfall, temperature and irrigation',[['Avg Rainfall','rain','avg','mm'],['Avg Temperature','temp','avg','°C'],['Irrigated Area','irr','sum','ha']],[['Avg Rainfall by Year','line','Year','rain','avg'],['Production by Crop Category','pie','Crop Category','prod','sum'],['Production by Season','bar','Crop Season','prod','sum']]),
+P('fr','Farming & Resource Analysis','Farmers, seeds and farming methods',[['Number of Farmers','farm','sum',''],['Irrigated Area','irr','sum','ha']],[['Production by Seed Type','pie','Seed Type','prod','sum'],['Production by Farming Method','bar','Farming Method','prod','sum']]),
+P('pp','Production & Profitability','Revenue, cost and profit by crop',[['Production','prod','sum','t'],['Total Revenue','rev','sum','₹'],['Total Cost','cost','sum','₹'],['Total Profit','profit','sum','₹']],[['Profit by Crop','bar','Crop','profit','sum'],['Production Share by Crop','doughnut','Crop','prod','sum']]),
+P('md','Market & Demand Analysis','Demand, price and exports',[['Market Demand','dem','sum','t'],['Avg Market Price','price','avg','₹/t'],['Export Quantity','exp','sum','t']],[['Demand by Crop','bar','Crop','dem','sum'],['Exports by Crop','bar','Crop','exp','sum']]),
+P('ce','Cost & Efficiency Analysis','Cost per hectare, fertilizer and yield',[['Avg Cost / Hectare','pcost','avg','₹'],['Average Yield','yld','avg','t/ha'],['Area Cultivated','area','sum','ha'],['Avg Fertilizer','fert','avg','kg/ha']],[['Avg Cost per Hectare by Crop','bar','Crop','pcost','avg'],['Area by Farming Method','doughnut','Farming Method','area','sum']]),
+P('op','Overall Performance & Insights','Headline KPIs and profit trend',[['Total Production','prod','sum','t'],['Total Profit','profit','sum','₹'],['Average Yield','yld','avg','t/ha'],['Export Quantity','exp','sum','t']],[['Profit by Year','line','Year','profit','sum'],['Production by Crop Category','doughnut','Crop Category','prod','sum']])
+];
+// ---- sample data (same columns as the Power BI dataset) ----
+function sample(){
+  let s=7;const r=()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const ST={Maharashtra:['Nashik','Pune'],Punjab:['Ludhiana','Amritsar'],'Uttar Pradesh':['Lucknow','Kanpur'],Gujarat:['Surat','Rajkot'],Karnataka:['Mysuru','Belagavi']};
+  const CR=[['Rice','Cereal','Kharif',3.2,20000,35000],['Wheat','Cereal','Rabi',3.0,22000,33000],['Maize','Cereal','Zaid',2.8,18000,30000],['Sugarcane','Cash Crop','Kharif',70,3000,90000],['Cotton','Cash Crop','Kharif',1.8,60000,55000],['Gram','Pulse','Rabi',1.2,50000,30000]];
+  const pick=a=>a[Math.floor(r()*a.length)],rows=[];
+  for(const[st,ds]of Object.entries(ST))for(const d of ds)for(const c of CR)for(let y=2018;y<=2023;y++){
+    const area=Math.round(50+r()*450),yl=c[3]*(0.8+r()*0.4)*(1+(y-2018)*0.02),pr=area*yl,rev=pr*c[4],cost=area*c[5]*(0.9+r()*0.2),fm=Math.max(1,Math.round(area/2.5));
+    rows.push({Year:y,State:st,District:d,Crop:c[0],'Crop Category':c[1],'Crop Season':c[2],[F.prod]:pr,[F.area]:area,[F.yld]:yl,[F.rev]:rev,[F.cost]:cost,[F.profit]:rev-cost,[F.rain]:400+r()*1000,[F.temp]:22+r()*10,[F.farm]:fm,[F.irr]:area*(0.4+r()*0.5),[F.fert]:80+r()*140,[F.dem]:pr*(0.9+r()*0.3),[F.price]:c[4]*(0.9+r()*0.2),[F.exp]:pr*r()*0.15,[F.pcost]:c[5]*(0.9+r()*0.2),'Seed Type':pick(['Hybrid','HYV','Traditional']),'Farming Method':pick(['Organic','Conventional','Mixed'])});
+  }
+  return rows;
+}
+let DATA=sample(),page='home',filt={Year:'All',State:'All',Crop:'All'},charts=[],isSample=true;
+const $=id=>document.getElementById(id);
+const fmt=(v,u)=>{if(!isFinite(v))return'–';const a=Math.abs(v);const n=a>=1e7?(v/1e7).toFixed(2)+' Cr':a>=1e5?(v/1e5).toFixed(2)+' L':a>=1e3?(v/1e3).toFixed(1)+' K':v.toFixed(a<10?2:0);return(u==='₹'||u==='₹/t'?'₹':'')+n+(u&&u[0]!=='₹'?' '+u:u==='₹/t'?'/t':'')};
+function agg(rows,key,fk,fn){const m=new Map();for(const r of rows){const k=r[key];if(k==null||k==='')continue;const v=+r[F[fk]];if(isNaN(v))continue;const o=m.get(k)||[0,0];o[0]+=v;o[1]++;m.set(k,o)}
+  let e=[...m].map(([k,o])=>[k,fn==='avg'?o[0]/o[1]:o[0]]);return key==='Year'?e.sort((a,b)=>a[0]-b[0]):e.sort((a,b)=>b[1]-a[1])}
+function total(rows,fk,fn){let s=0,n=0;for(const r of rows){const v=+r[F[fk]];if(!isNaN(v)){s+=v;n++}}return fn==='avg'?(n?s/n:NaN):s}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function buildNav(){$('nav').innerHTML='';[{id:'home',name:'Home'},...PAGES].forEach(p=>{const b=document.createElement('button');b.textContent=p.name;b.className=p.id===page?'on':'';b.onclick=()=>{page=p.id;buildNav();render();scrollTo(0,0)};$('nav').appendChild(b)})}
+function buildFilters(){const f=$('filters');f.innerHTML='';['Year','State','Crop'].forEach(k=>{const vals=[...new Set(DATA.map(r=>r[k]).filter(v=>v!=null&&v!==''))].sort();const l=document.createElement('label');l.textContent=k;const s=document.createElement('select');s.innerHTML='<option>All</option>'+vals.map(v=>`<option>${v}</option>`).join('');s.value=filt[k];s.onchange=()=>{filt[k]=s.value;render()};l.appendChild(s);f.appendChild(l)})}
+function render(){
+  charts.forEach(c=>c.destroy());charts=[];
+  $('note').textContent=isSample?'Showing built-in SAMPLE data. Click “Upload your data” to load your own Excel/CSV (same columns as your Power BI dataset).':'Showing your uploaded data ('+DATA.length+' rows).';
+  const v=$('view');
+  if(page==='home'){$('filters').style.display='none';
+    v.innerHTML=`<div class="hero"><h2>Turning agricultural data into visual insights</h2><p>An interactive dashboard to analyse crop production, yield, profit, climate, market demand and cost across states, districts and years.</p><p>Pick a page below, then use the Year, State and Crop filters to explore.</p></div><div class="pages">${PAGES.map(p=>`<button data-id="${p.id}"><b>${p.name}</b><span>${p.desc}</span></button>`).join('')}</div>`;
+    v.querySelectorAll('button').forEach(b=>b.onclick=()=>{page=b.dataset.id;buildNav();render();scrollTo(0,0)});return}
+  $('filters').style.display='flex';
+  const rows=DATA.filter(r=>Object.keys(filt).every(k=>filt[k]==='All'||String(r[k])===filt[k]));
+  const p=PAGES.find(x=>x.id===page);
+  v.innerHTML=`<div class="kpis">${p.kpis.map(k=>`<div class="kpi"><b>${fmt(total(rows,k[1],k[2]),k[3])}</b><span>${k[2]==='avg'?'Avg ':''}${k[0].replace(/^Avg /,'')}</span></div>`).join('')}</div><div class="charts">${p.charts.map((c,i)=>`<div class="card"><h3>${c[0]}</h3><div class="box"><canvas id="c${i}"></canvas></div></div>`).join('')}</div>`;
+  Chart.defaults.color=css('--mu');Chart.defaults.borderColor=css('--bd');
+  const pal=['#3e8e41','#d9a441','#8b6b43','#1f4d2e','#7fb77e','#c98b3a','#a8c686','#5a7d4e'];
+  p.charts.forEach((c,i)=>{const d=agg(rows,c[2],c[3],c[4]),round=c[1]==='pie'||c[1]==='doughnut',hz=c[1]==='bar'&&d.length>7;
+    charts.push(new Chart($('c'+i),{type:c[1]==='line'?'line':round?c[1]:'bar',data:{labels:d.map(x=>x[0]),datasets:[{label:c[0],data:d.map(x=>x[1]),backgroundColor:round?pal:c[1]==='line'?'rgba(62,142,65,.15)':'#3e8e41',borderColor:c[1]==='line'?'#8b6b43':'#3e8e41',borderWidth:c[1]==='line'?3:0,fill:c[1]==='line',tension:.3,pointRadius:4,borderRadius:4}]},
+      options:{indexAxis:hz?'y':'x',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:round,position:'bottom'}},scales:round?{}:{y:{beginAtZero:true,ticks:{callback:x=>fmt(x,'')}}}}}))});
+}
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  try{if(typeof XLSX==='undefined')throw new Error('Excel reader could not load');
+    const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+    const rn=rows.map(r=>{const o={};for(const k in r)o[k.trim()]=r[k];return o});
+    const hits=Object.values(F).filter(c=>rn[0]&&c in rn[0]).length;
+    if(!rn.length||hits<3)throw new Error('Columns not recognised. Use the same column names as your Power BI Sheet1.');
+    DATA=rn;isSample=false;filt={Year:'All',State:'All',Crop:'All'};buildFilters();render()
+  }catch(err){$('note').textContent='Upload failed: '+err.message}};
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>render());
+buildNav();buildFilters();render();
+</script>
+</body>
+</html>
